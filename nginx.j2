@@ -1,0 +1,11 @@
+server {
+    listen 80;
+    server_name {{domain}};
+    
+     location / {
+        gzip off;
+        root /var/www/{{ domain }};
+        index  index.html;
+    }
+    
+} 

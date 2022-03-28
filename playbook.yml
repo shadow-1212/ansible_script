@@ -1,0 +1,50 @@
+---
+- name: Installation du serveur
+  hosts: web
+  remote_user: root
+  vars:
+    domain: local.dev
+    repo: https://github.com/shadow-1212/zomatel-portal.git
+  tasks:
+    - name: Installation des package necessaire
+      apt: name={{ item }} update_cache=yes state=latest
+      with_items: 
+        - nginx
+        - git
+        - nano
+        
+    - name: Demarrage de nginx
+      service: name=nginx state=started enabled=true    
+    
+    - name: Supprimer default.conf
+      become: true
+      file: path=/etc/nginx/sites-enabled/default state=absent  
+      notify: nginx reload
+    
+    - name: creation d'un dossier
+      become: true
+      when : repo is undefined
+      file: path=/home/root/{{ domain }} state=directory owner=root
+
+    - name: clonage du site 
+      become: true
+      when: repo is defined
+      git: dest=/home/root/{{ domain }} clone=yes repo={{ repo }}
+      notify: nginx reload
+
+
+    - name: lien vers www
+      become: true
+      file: src=/home/root/{{ domain }} dest=/var/www/{{ domain }} state=link
+    
+    - name: creation de la config nginx
+      become: true
+      template: src=nginx.j2 dest=/etc/nginx/sites-enabled/{{ domain }} force=yes 
+      notify: nginx reload
+  
+  handlers:
+    - name: nginx reload
+      service: 
+        name: nginx 
+        state: reloaded
+...
